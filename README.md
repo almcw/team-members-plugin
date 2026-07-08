@@ -42,6 +42,7 @@ Create entries under **Team Members** in the WordPress admin. Each post supports
 | `columns` | `3` | Number of columns on desktop (2–8) |
 | `aspect_ratio` | `square` | `square` (1:1) or `portrait` (16:9) card images |
 | `show_details` | `true` | Set to `false` to hide bios and team tags |
+| `mobile_carousel` | `false` | Set to `true` to show a one-at-a-time carousel on screens under 768 px instead of a stacked grid; desktop layout is unaffected |
 
 ### Examples
 
@@ -50,6 +51,8 @@ Create entries under **Team Members** in the WordPress admin. Each post supports
 [team_grid columns="4"]
 [team_grid team="leadership,engineering" columns="2" aspect_ratio="portrait"]
 [team_grid show_details="false"]
+[team_grid mobile_carousel="true"]
+[team_grid mobile_carousel="true" columns="4" team="leadership"]
 ```
 
 ## Behaviour

@@ -141,10 +141,11 @@ class Team_Members_Display {
 	public static function render_shortcode( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'team'         => '',       // comma-separated 'team' taxonomy slugs
-				'columns'      => '3',      // desktop columns (2-8)
-				'aspect_ratio' => 'square', // 'square' (1:1) or 'portrait' (16:9)
-				'show_details' => 'true',   // 'false' hides bio and team tags
+				'team'            => '',       // comma-separated 'team' taxonomy slugs
+				'columns'         => '3',      // desktop columns (2-8)
+				'aspect_ratio'    => 'square', // 'square' (1:1) or 'portrait' (16:9)
+				'show_details'    => 'true',   // 'false' hides bio and team tags
+				'mobile_carousel' => 'false',  // 'true' switches to a carousel on mobile
 			),
 			$atts,
 			'team_grid'
@@ -155,6 +156,8 @@ class Team_Members_Display {
 		$aspect_ratio_css = ( $atts['aspect_ratio'] === 'portrait' ) ? '16 / 9' : '1 / 1';
 
 		$show_details = ( $atts['show_details'] !== 'false' );
+
+		$mobile_carousel = ( $atts['mobile_carousel'] === 'true' );
 
 		$query_args = array(
 			'post_type'      => 'team_member',
@@ -196,7 +199,11 @@ class Team_Members_Display {
 		} );
 
 		ob_start();
-		echo '<div class="tmd-grid" style="--tmd-cols:' . esc_attr( $columns ) . ';" role="list">';
+		if ( $mobile_carousel ) {
+			echo '<div class="tmd-carousel-wrap">';
+		}
+		$grid_class = 'tmd-grid' . ( $mobile_carousel ? ' tmd-carousel-enabled' : '' );
+		echo '<div class="' . esc_attr( $grid_class ) . '" style="--tmd-cols:' . esc_attr( $columns ) . ';" role="list">';
 		global $post;
 		foreach ( $posts as $post ) {
 			setup_postdata( $post );
@@ -204,6 +211,30 @@ class Team_Members_Display {
 		}
 		wp_reset_postdata();
 		echo '</div>';
+
+		if ( $mobile_carousel ) {
+			$num_slides = count( $posts );
+			?>
+			<div class="tmd-carousel-ui">
+				<button class="tmd-carousel-prev" aria-label="<?php esc_attr_e( 'Previous team member', self::TEXT_DOMAIN ); ?>">
+					<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+				</button>
+				<div class="tmd-carousel-dots" role="group" aria-label="<?php esc_attr_e( 'Team member slides', self::TEXT_DOMAIN ); ?>">
+					<?php for ( $i = 0; $i < $num_slides; $i++ ) : ?>
+					<button
+						class="tmd-dot<?php echo $i === 0 ? ' tmd-dot--active' : ''; ?>"
+						aria-label="<?php echo esc_attr( sprintf( __( 'Go to slide %d', self::TEXT_DOMAIN ), $i + 1 ) ); ?>"
+						aria-pressed="<?php echo $i === 0 ? 'true' : 'false'; ?>"
+					></button>
+					<?php endfor; ?>
+				</div>
+				<button class="tmd-carousel-next" aria-label="<?php esc_attr_e( 'Next team member', self::TEXT_DOMAIN ); ?>">
+					<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+				</button>
+			</div>
+			<?php
+			echo '</div>'; // .tmd-carousel-wrap
+		}
 
 		return ob_get_clean();
 	}
@@ -783,6 +814,127 @@ class Team_Members_Display {
 	border: none;
 	display: block;
 }
+
+/* =============================================================================
+   Mobile carousel (active when mobile_carousel="true")
+   ============================================================================= */
+
+/* Hide controls on desktop — display:none removes them from the a11y tree */
+@media (min-width: 768px) {
+	.tmd-carousel-ui { display: none; }
+}
+
+@media (max-width: 767px) {
+	.tmd-carousel-wrap { position: relative; }
+
+	/* Override CSS Grid with a horizontal scrolling flex track */
+	.tmd-carousel-enabled {
+		display: flex !important;
+		flex-wrap: nowrap;
+		overflow-x: scroll;
+		scroll-snap-type: x mandatory;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		gap: 0;
+	}
+
+	.tmd-carousel-enabled::-webkit-scrollbar { display: none; }
+
+	.tmd-carousel-enabled > .tmd-card {
+		flex: 0 0 100%;
+		min-width: 0;
+		scroll-snap-align: start;
+	}
+
+	/* Controls row: prev · dots · next */
+	.tmd-carousel-ui {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 0.875rem 0 0;
+	}
+
+	.tmd-carousel-prev,
+	.tmd-carousel-next {
+		width: 2.25rem;
+		height: 2.25rem;
+		flex-shrink: 0;
+		border-radius: 50%;
+		border: 1px solid #e6e6e2;
+		background: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		padding: 0;
+		color: #2A2A2A;
+		transition: background 0.15s ease, opacity 0.15s ease;
+	}
+
+	.tmd-carousel-prev:disabled,
+	.tmd-carousel-next:disabled { opacity: 0.3; cursor: default; }
+
+	.tmd-carousel-prev:not(:disabled):hover,
+	.tmd-carousel-next:not(:disabled):hover { background: #f0f0ec; }
+
+	.tmd-carousel-prev:focus-visible,
+	.tmd-carousel-next:focus-visible {
+		outline: 2px solid #7A9E8E;
+		outline-offset: 2px;
+	}
+
+	.tmd-carousel-prev svg,
+	.tmd-carousel-next svg {
+		width: 1rem;
+		height: 1rem;
+		stroke: currentColor;
+		stroke-width: 2.5;
+		fill: none;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		display: block;
+	}
+
+	/* Dots */
+	.tmd-carousel-dots {
+		display: flex;
+		gap: 0.4rem;
+		align-items: center;
+		flex-wrap: wrap;
+		justify-content: center;
+		max-width: calc(100% - 6rem);
+	}
+
+	.tmd-dot {
+		width: 0.5rem;
+		height: 0.5rem;
+		flex-shrink: 0;
+		border-radius: 50%;
+		border: none;
+		background: #d0d0cc;
+		cursor: pointer;
+		padding: 0;
+		transition: background 0.2s ease, transform 0.2s ease;
+	}
+
+	.tmd-dot--active {
+		background: #5C8C7A;
+		transform: scale(1.4);
+	}
+
+	.tmd-dot:focus-visible {
+		outline: 2px solid #7A9E8E;
+		outline-offset: 3px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tmd-carousel-prev,
+	.tmd-carousel-next { transition: none; }
+	.tmd-dot            { transition: none; }
+	.tmd-dot--active    { transform: none; }
+}
 </style>
 		<?php
 	}
@@ -1071,6 +1223,62 @@ class Team_Members_Display {
 	function prefersReducedMotion() {
 		return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	}
+
+	/* -------------------------------------------------------------------------
+	   Mobile carousel — prev/next buttons, dots, and scroll-snap swipe
+	   Browser handles touch swipe natively via scroll-snap; JS drives buttons,
+	   dots, and keeps the two in sync via the scroll event.
+	------------------------------------------------------------------------- */
+	var mqCarousel = window.matchMedia('(max-width: 767px)');
+
+	document.querySelectorAll('.tmd-carousel-wrap').forEach(function (wrap) {
+		var track = wrap.querySelector('.tmd-carousel-enabled');
+		var prev  = wrap.querySelector('.tmd-carousel-prev');
+		var next  = wrap.querySelector('.tmd-carousel-next');
+		var dots  = Array.prototype.slice.call(wrap.querySelectorAll('.tmd-dot'));
+		var n     = track ? track.querySelectorAll('.tmd-card').length : 0;
+		var idx   = 0;
+
+		if (!track || n === 0) { return; }
+
+		function goTo(i) {
+			if (!mqCarousel.matches) { return; }
+			idx = Math.max(0, Math.min(i, n - 1));
+			track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+			sync();
+		}
+
+		function sync() {
+			dots.forEach(function (dot, i) {
+				var active = (i === idx);
+				dot.classList.toggle('tmd-dot--active', active);
+				dot.setAttribute('aria-pressed', String(active));
+			});
+			if (prev) { prev.disabled = (idx === 0); }
+			if (next) { next.disabled = (idx === n - 1); }
+		}
+
+		track.addEventListener('scroll', function () {
+			if (!mqCarousel.matches) { return; }
+			var newIdx = Math.round(track.scrollLeft / (track.clientWidth || 1));
+			if (newIdx !== idx) { idx = newIdx; sync(); }
+		}, { passive: true });
+
+		if (prev) { prev.addEventListener('click', function () { goTo(idx - 1); }); }
+		if (next) { next.addEventListener('click', function () { goTo(idx + 1); }); }
+
+		dots.forEach(function (dot, i) {
+			dot.addEventListener('click', function () { goTo(i); });
+		});
+
+		/* Reset to first slide when resizing back to desktop */
+		mqCarousel.addEventListener('change', function (e) {
+			if (!e.matches) { idx = 0; track.scrollLeft = 0; }
+			sync();
+		});
+
+		sync();
+	});
 
 }());
 </script>
