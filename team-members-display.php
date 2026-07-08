@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Team Members Display
  * Description:       Displays team members in a responsive, accessible grid with modal. Use [team_grid] shortcode.
- * Version:           1.4.0
+ * Version:           1.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Text Domain:       team-members-display
@@ -447,7 +447,7 @@ class Team_Members_Display {
 		?>
 <style id="tmd-styles">
 /* =============================================================================
-   Team Members Display v1.0
+   Team Members Display v1.5
    Palette: warm off-white bg · white cards · dark-grey text · muted sage accent
    All contrast ratios meet WCAG AA (4.5:1 normal text, 3:1 large text).
    ============================================================================= */
